@@ -8,8 +8,11 @@ import logging
 import sys
 reload(sys)
 sys.setdefaultencoding('utf8')
-#执行任务，首先查询数据库任务配置表
+
+
+# 执行任务，首先查询数据库任务配置表
 def execute_workflow():
+    conn = None
     while True:
         log_date=time.strftime("%Y%m%d", time.localtime())
         job_start_time=datetime.datetime.now()
@@ -65,7 +68,10 @@ def execute_workflow():
         except Exception as e:
             print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),e
         finally:
-            conn.close()
+            if conn is None:
+                pass
+            else:
+                conn.close()
             print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),"结束工作流"
             time.sleep(20)
 
