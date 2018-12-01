@@ -17,15 +17,14 @@ def execute_workflow():
         log_date=time.strftime("%Y%m%d", time.localtime())
         job_start_time=datetime.datetime.now()
         try:
-            logging.basicConfig(level=logging.DEBUG,#控制台打印的日志级别
-                    filename=log_filepath+log_date+'_data_load.log',
-                    filemode='a',##模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
-                    #a是追加模式，默认如果不写的话，就是追加模式
-                    format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'#日志格式
-                    )
+            logging.basicConfig(level=logging.DEBUG, # 控制台打印的日志级别
+                                filename=log_filepath+log_date+'_data_load.log',
+                                filemode='a',  # a是追加模式，默认如果不写的话，就是追加模式
+                                # 模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
+                                format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s')
             logger = logging.getLogger(__name__)
             time.sleep(1)
-            conn = MySQLdb.connect(host, user, passwd, db,port, charset='utf8' )
+            conn = MySQLdb.connect(host, user, passwd, db, port, charset='utf8' )
             # 查询时间范围
             config_time=query_workflow_time(conn,logger)
             # 删除数据
@@ -34,7 +33,7 @@ def execute_workflow():
             logger.info("数据时间")
             logger.info(param_start_time)
             logger.info(param_end_time)
-            execute_result= False
+            execute_result = False
             workflow_list = query_workflow(conn,logger)
             print workflow_list
             if workflow_list is not None:
@@ -42,7 +41,7 @@ def execute_workflow():
                     if execute_result:
                         time.sleep(5)
                     task_list=query_task(conn,workflow_id,logger)
-                    if task_list  is not None:
+                    if task_list is not None:
                         for task in task_list:
                             execute_result=execute_task(conn,task,param_start_time,param_end_time,logger)
                             if execute_result:
@@ -50,8 +49,8 @@ def execute_workflow():
                 time.sleep(2)
                 set_start_time=param_end_time
                 set_end_time=(datetime.datetime.now()+datetime.timedelta(minutes=-10)).strftime("%Y-%m-%d %H:%M:%S")
-                print(param_start_time,set_start_time,param_end_time,set_end_time)
-                print(set_end_time<=set_start_time)
+                print param_start_time,set_start_time,param_end_time,set_end_time
+                print set_end_time<=set_start_time
                 job_end_time=datetime.datetime.now()
                 job_seconds=(job_end_time-job_start_time).seconds
                 if 180-job_seconds>0:
@@ -65,20 +64,21 @@ def execute_workflow():
                 set_workflow_time(conn,set_start_time,set_end_time,logger)
             else:
                 time.sleep(5)
-        except Exception as e:
-            print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),e
+        except MySQLdb.Error, e:
+            print '%s MySQL Error %d:%s' %(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                                           e.args[0], e.args[1])
         finally:
             if conn is None:
                 pass
             else:
                 conn.close()
-            print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),"结束工作流"
+            print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), "结束工作流"
             time.sleep(20)
 
 
 if __name__ == '__main__':
     # 初始化，更新所有workflowid =0，设置data_time
-    #执行工作流
+    # 执行工作流
     print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),"初始化开始"
 #    init_workflow()
     print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),"初始化结束"

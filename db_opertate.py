@@ -8,8 +8,10 @@ import datetime
 import sys
 reload(sys)
 sys.setdefaultencoding('utf8')
+
+
 def init_workflow():
-    conn = MySQLdb.connect(host, user, passwd, db,port, charset='utf8' )
+    conn = MySQLdb.connect(host, user, passwd, db, port, charset='utf8' )
     cursor = conn.cursor()
     sql = "update workflow_config set run_status=0"
     try:
@@ -27,9 +29,12 @@ def init_workflow():
         return None
     conn.close()
 
+
 def query_workflow_time(conn,logger):
     logger.info("查询工数据时间范围")
-    sql1 = "SELECT DATE_FORMAT(param_start_time,'%Y-%m-%d %H:%i:%s')as param_start_time,DATE_FORMAT(param_end_time,'%Y-%m-%d %H:%i:%s')as param_end_time FROM config_workflow_time limit 1"
+    sql1 = "SELECT DATE_FORMAT(param_start_time,'%Y-%m-%d %H:%i:%s')as " \
+           "param_start_time,DATE_FORMAT(param_end_time,'%Y-%m-%d %H:%i:%s')as " \
+           "param_end_time FROM config_workflow_time limit 1"
     logger.info("查询工数据时间范围")
     logger.info(sql1)
     try:
@@ -46,6 +51,7 @@ def query_workflow_time(conn,logger):
     finally:
         return config_time
 
+
 def set_workflow_time(conn,set_start_time,set_end_time,logger):
     cursor = conn.cursor()
     logger.info("查询工数据时间范围")
@@ -58,6 +64,7 @@ def set_workflow_time(conn,set_start_time,set_end_time,logger):
     except Exception as e:
         logger.error("查询数据时间失败")
         logger.error(str(e))
+
 
 def query_workflow(conn,logger):
     cursor = conn.cursor()
@@ -78,6 +85,7 @@ def query_workflow(conn,logger):
         logger.error("查询工作流失败")
         logger.error(str(e))
         return None
+
 
 def query_task(conn,workflow_id,logger):
     cursor = conn.cursor()
@@ -102,7 +110,7 @@ def query_task(conn,workflow_id,logger):
             task1['target_table'] = row[6]
             task1['delete_sql'] = row[7]
             task1['task_id']=row[8]
-            print(task1)
+            print task1
             logger.info("task_id:"+str(task1['task_id']))
             list1.append(task1)
         logger.info("查询工作流的子任务完成")
@@ -111,19 +119,24 @@ def query_task(conn,workflow_id,logger):
         logger.error("查询工作流的子任务失败")
         logger.error(str(e))
         return None
+
+
 def delete_data(conn,delete_sql,param_start_time,param_end_time,logger):
     logger.info("开始执行子任务数据删除")
+    sql = delete_sql.format(param_start_time=param_start_time, param_end_time=param_end_time)
     try:
         cur = conn.cursor()
-        sql = delete_sql.format(param_start_time=param_start_time,param_end_time=param_end_time)
         logger.info(sql)
         cur.execute(sql)
         conn.commit()
-    except Exception as e:
-        logger.error(sql)
+    except MySQLdb.Error, e:
+        msg = '%s MySQL Error sql=%s_%d:%s' % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), sql,
+                                    e.args[0], e.args[1])
+        logger.error(msg)
         logger.error("执行子任务数据删除失败")
-        logger.error(str(e))
+        # logger.error(str(e))
     logger.info("执行子任务数据删除完成")
+
 
 def insert_data(conn,target_table,datas,logger):
     logger.info("开始执行子任务数据插入")
@@ -152,15 +165,18 @@ def insert_data(conn,target_table,datas,logger):
             for data in datasql_list:
                 num = num +1
                 sql = "insert into  "+target_table+fields+" VALUES ({}) ".format(data)
+                logger.info("start---执行子任务数据插入 sql : %s", sql)
                 cur.execute(sql)
                 if num >1000:
                     conn.commit()
             conn.commit()
             logger.info("执行子任务数据插入完成")
-    except Exception as e:
-        logger.error(sql)
-        logger.error(str(e))
+    except MySQLdb.Error, e:
+        msg = '%s MySQL Error %d:%s' % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                                        e.args[0], e.args[1])
+        logger.error(msg)
         logger.error("执行子任务数据插入失败")
+
 
 def execute_task(conn,task,param_start_time,param_end_time,logger):
     logger.info("开始执行子任务")
@@ -197,10 +213,10 @@ def execute_task(conn,task,param_start_time,param_end_time,logger):
         else:
             logger.info("数据量为0，不插入")
         return False
-    except Exception as e:
-        logger.error(sql)
-        print(e)
-        logger.error(str(e))
+    except MySQLdb.Error, e:
+        slog = '%s MySQL Error %d:%s' % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                                            e.args[0], e.args[1])
+        logger.error(slog)
         return False
 
 
