@@ -34,8 +34,8 @@ def execute_workflow():
             logger.info(param_start_time)
             logger.info(param_end_time)
             execute_result = False
-            workflow_list = query_workflow(conn,logger)
-            print workflow_list
+            workflow_list = query_workflow(conn, logger)
+            # print workflow_list
             if workflow_list is not None:
                 for workflow_id in workflow_list:
                     if execute_result:

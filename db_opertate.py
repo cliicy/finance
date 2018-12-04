@@ -138,44 +138,78 @@ def delete_data(conn,delete_sql,param_start_time,param_end_time,logger):
     logger.info("执行子任务数据删除完成")
 
 
-def insert_data(conn,target_table,datas,logger):
-    logger.info("开始执行子任务数据插入")
-    cur = conn.cursor()
-    key_list=[]
-    datasql_list=[]
-    for data in datas:
-        for key in data:
-            key_list.append(key)
-        break
-    fields = ",".join(key_list)
-    fields= "("+fields+")"
-    for data in datas:
-        value_list=[]
-        for key in key_list:
-            value = data[key]
-            value_list.append(str(value))
-        strdata=str(value_list)
-        strdata=strdata.replace("[",'')
-        strdata=strdata.replace("]",'')
-        datasql_list.append(strdata)
-    try:
-        if len(datas)>0:
-            logger.info("执行子任务数据插入")
-            num =1
-            for data in datasql_list:
-                num = num +1
-                sql = "insert into  "+target_table+fields+" VALUES ({}) ".format(data)
-                logger.info("start---执行子任务数据插入 sql : %s", sql)
-                cur.execute(sql)
-                if num >1000:
+# def do_insert(conn, target_table, datas, logger):
+#     pass
+
+
+def insert_data(conn, target_table, datas, logger):
+    if len(datas) > 0:
+        ins_sql_list = []
+        logger.info("开始执行子任务数据插入")
+        cur = conn.cursor()
+        key_list = []
+        sql = ''
+        sv = ''
+        for ones in datas:
+            sdd = ''
+            for key, values in ones.items():
+                if key in key_list:
+                    pass
+                else:
+                    key_list.append(key)
+                if type(values) is unicode:
+                    logger.info("str=" + str(values))
+                    utf8string = values.encode("utf-8")
+                    sdd += "'{0}', ".format(utf8string)
+                else:
+                    sdd += "'{0}', ".format(values)
+            fields = ",".join(key_list)
+            fields = "("+fields+")"
+            # 连接values中的各个值
+            sdd = sdd.rstrip()
+            sdd = sdd.rstrip(',')
+            logger.info("sdd=" + str(sdd))
+            # 批量加入数据库
+            sdd = ' ({0})'.format(sdd)
+            sv += sdd + ','
+            sql = "insert into  " + target_table + fields + " VALUES {}".format(sv)
+            logger.info("start---收集要执行插入的子任务数据 sql : %s", sql)
+            ins_sql_list.append(sdd)
+            if len(ins_sql_list) == 1000:
+                sql = sql.rstrip(',')
+                logger.info("已收集到1000条要执行插入的子任务数据了，开始批量执行 sql:", sql)
+
+                try:
+                    cur.execute(sql)
                     conn.commit()
-            conn.commit()
-            logger.info("执行子任务数据插入完成")
-    except MySQLdb.Error, e:
-        msg = '%s MySQL Error %d:%s' % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
-                                        e.args[0], e.args[1])
-        logger.error(msg)
-        logger.error("执行子任务数据插入失败")
+                    ins_sql_list = []
+                    sv = ''
+                    logger.info("执行子任务插入1000条数据完成")
+                except MySQLdb.Error, e:
+                    msg = '%s MySQL Error %d:%s' % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                                                    e.args[0], e.args[1])
+                    logger.error("执行子任务插入1000条数据失败")
+                    logger.error(msg)
+            else:
+                pass
+
+        size = len(ins_sql_list)
+        if size > 0:
+            sql = sql.rstrip(',')
+            msg = '执行插入的子任务数据条数：{0}，开始批量执行 sql: {1}'.format(size, sql)
+            logger.info('开始数据插入：' + msg)
+            try:
+                cur.execute(sql)
+                conn.commit()
+                logger.info('完成数据插入：' + msg)
+            except MySQLdb.Error, e:
+                err_msg = '%s MySQL Error %d:%s' % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                                                    e.args[0], e.args[1])
+                print err_msg
+                logger.error('数据插入出错：' + msg)
+                logger.error(err_msg)
+        else:
+            pass
 
 
 def execute_task(conn,task,param_start_time,param_end_time,logger):
@@ -203,12 +237,12 @@ def execute_task(conn,task,param_start_time,param_end_time,logger):
         logger.info("执行子任务数据查询结束数据量")
         if results is not None:
             logger.info(str(len(results)))
-        logger.info("开始执行子任务数据插入")
+        logger.info("开始收集要执行的执行子任务数据插入")
         if len(results)>0:
             # 删除数据,避免重复
             if delete_sql is not None:
-                delete_data(conn,delete_sql,param_start_time,param_end_time,logger)
-            insert_data(conn,target_table,results,logger)
+                delete_data(conn, delete_sql, param_start_time, param_end_time, logger)
+            insert_data(conn, target_table, results, logger)
             logger.info("执行子任务数据插入完成")
         else:
             logger.info("数据量为0，不插入")

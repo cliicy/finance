@@ -13,6 +13,7 @@ passwd = "Qwer-1234"
 db = "yg_data_submission"
 port = 3306
 
+
 log_filepath="/data/logs/" if os.environ.get("SHELL", "") else "Logs\\"
 isExists = os.path.exists(log_filepath)
 if not isExists:
