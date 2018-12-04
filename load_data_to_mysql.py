@@ -6,6 +6,7 @@ import time
 import datetime
 import logging
 import sys
+from logging.handlers import TimedRotatingFileHandler
 reload(sys)
 sys.setdefaultencoding('utf8')
 
@@ -14,15 +15,28 @@ sys.setdefaultencoding('utf8')
 def execute_workflow():
     conn = None
     while True:
-        log_date=time.strftime("%Y%m%d", time.localtime())
+        # log_date=time.strftime("%Y%m%d", time.localtime())
         job_start_time=datetime.datetime.now()
         try:
-            logging.basicConfig(level=logging.DEBUG, # 控制台打印的日志级别
-                                filename=log_filepath+log_date+'_data_load.log',
-                                filemode='a',  # a是追加模式，默认如果不写的话，就是追加模式
-                                # 模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
-                                format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s')
+            # logging.basicConfig(level=logging.DEBUG, # 控制台打印的日志级别
+            #                     filename=log_filepath+log_date+'_data_load.log',
+            #                     filemode='a',  # a是追加模式，默认如果不写的话，就是追加模式
+            #                     # 模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
+            #                     format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s')
+
+            # 日志改造
+            fmt_str = '%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
+            filename = log_filepath + '_data_load'
+            fileshandle = TimedRotatingFileHandler(filename, when='MIDNIGHT', interval=1, backupCount=0)
+            logging.basicConfig(level=logging.INFO)
+            fileshandle.suffix = "%Y%m%d.log"
+            # fileshandle.setLevel(logging.INFO)
+            formater = logging.Formatter(fmt_str)
+            fileshandle.setFormatter(formater)
             logger = logging.getLogger(__name__)
+            logger.addHandler(fileshandle)
+            # 日志改造
+
             time.sleep(1)
             conn = MySQLdb.connect(host, user, passwd, db, port, charset='utf8' )
             # 查询时间范围

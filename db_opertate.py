@@ -35,8 +35,7 @@ def query_workflow_time(conn,logger):
     sql1 = "SELECT DATE_FORMAT(param_start_time,'%Y-%m-%d %H:%i:%s')as " \
            "param_start_time,DATE_FORMAT(param_end_time,'%Y-%m-%d %H:%i:%s')as " \
            "param_end_time FROM config_workflow_time limit 1"
-    logger.info("查询工数据时间范围")
-    logger.info(sql1)
+    # logger.info(sql1)
     try:
         cursor = conn.cursor()
         cursor.execute(sql1)
@@ -44,9 +43,9 @@ def query_workflow_time(conn,logger):
         config_time={}
         config_time['param_start_time']=result[0]
         config_time['param_end_time']=result[1]
-        logger.info("查询数据时间完成")
+        # logger.info("查询数据时间完成")
     except Exception as e:
-        logger.error("查询数据失败")
+        # logger.error("查询数据失败")
         logger.error(str(e))
     finally:
         return config_time
@@ -54,15 +53,15 @@ def query_workflow_time(conn,logger):
 
 def set_workflow_time(conn,set_start_time,set_end_time,logger):
     cursor = conn.cursor()
-    logger.info("查询工数据时间范围")
+    logger.info("设置工数据时间范围")
     sql = "update config_workflow_time set param_start_time='{}',param_end_time='{}'".format(set_start_time,set_end_time)
-    logger.info(sql)
+    # logger.info(sql)
     try:
         cursor.execute(sql)
         conn.commit()
         logger.info("查询数据时间完成")
     except Exception as e:
-        logger.error("查询数据时间失败")
+        # logger.error("查询数据时间失败")
         logger.error(str(e))
 
 
@@ -82,7 +81,7 @@ def query_workflow(conn,logger):
         logger.info(str(list))
         return list
     except Exception as e:
-        logger.error("查询工作流失败")
+        # logger.error("查询工作流失败")
         logger.error(str(e))
         return None
 
@@ -93,7 +92,6 @@ def query_task(conn,workflow_id,logger):
     sql = "select b.host,b.db_name,b.port,b.user,b.passwd,a.select_sql,a.target_table,a.delete_sql,a.task_id " \
           "from config_tasks a join config_databases b on a.source_db_id=b.db_id " \
           "where a.if_valid=1 and a.workflow_id={workflow_id} order by a.task_id".format(workflow_id=workflow_id)
-    logger.info("查询工作流的子任务")
     list1 = []
     try:
         logger.info(sql)
@@ -110,13 +108,13 @@ def query_task(conn,workflow_id,logger):
             task1['target_table'] = row[6]
             task1['delete_sql'] = row[7]
             task1['task_id']=row[8]
-            print task1
+            # print task1
             logger.info("task_id:"+str(task1['task_id']))
             list1.append(task1)
-        logger.info("查询工作流的子任务完成")
+        # logger.info("查询工作流的子任务完成")
         return list1
     except Exception as e:
-        logger.error("查询工作流的子任务失败")
+        # logger.error("查询工作流的子任务失败")
         logger.error(str(e))
         return None
 
@@ -133,13 +131,9 @@ def delete_data(conn,delete_sql,param_start_time,param_end_time,logger):
         msg = '%s MySQL Error sql=%s_%d:%s' % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), sql,
                                     e.args[0], e.args[1])
         logger.error(msg)
-        logger.error("执行子任务数据删除失败")
+        # logger.error("执行子任务数据删除失败")
         # logger.error(str(e))
-    logger.info("执行子任务数据删除完成")
-
-
-# def do_insert(conn, target_table, datas, logger):
-#     pass
+    # logger.info("执行子任务数据删除完成")
 
 
 def insert_data(conn, target_table, datas, logger):
@@ -173,12 +167,11 @@ def insert_data(conn, target_table, datas, logger):
             sdd = ' ({0})'.format(sdd)
             sv += sdd + ','
             sql = "insert into  " + target_table + fields + " VALUES {}".format(sv)
-            logger.info("start---收集要执行插入的子任务数据 sql : %s", sql)
+            # logger.info("start---收集要执行插入的子任务数据 sql : %s", sql)
             ins_sql_list.append(sdd)
             if len(ins_sql_list) == 1000:
                 sql = sql.rstrip(',')
                 logger.info("已收集到1000条要执行插入的子任务数据了，开始批量执行 sql:", sql)
-
                 try:
                     cur.execute(sql)
                     conn.commit()
@@ -226,15 +219,15 @@ def execute_task(conn,task,param_start_time,param_end_time,logger):
         source_conn = MySQLdb.connect(source_host, source_user, source_pwd, source_db, cursorclass = MySQLdb.cursors.DictCursor,charset='utf8' )
         source_cursor = source_conn.cursor()
         sql = source_sql.format(param_start_time=param_start_time,param_end_time=param_end_time)
-        logger.info("开始执行子任务数据查询")
-        logger.info("开始执任务task_id")
-        logger.info(str(task_id))
+        # logger.info("开始执行子任务数据查询")
+        # logger.info("开始执任务task_id")
+        # logger.info(str(task_id))
         logger.info(sql)
         source_cursor.execute(sql)
         # 获取所有记录列表
         results = source_cursor.fetchall()
         # 插入数据
-        logger.info("执行子任务数据查询结束数据量")
+        # logger.info("执行子任务数据查询结束数据量")
         if results is not None:
             logger.info(str(len(results)))
         logger.info("开始收集要执行的执行子任务数据插入")
